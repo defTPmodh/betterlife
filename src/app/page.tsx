@@ -1,4 +1,4 @@
-import { ArrowRight, BadgeCheck, FileLock2, Fingerprint, Hospital, KeyRound, ShieldCheck, Sparkles, Stethoscope, TimerReset } from "lucide-react";
+import { ArrowRight, BadgeCheck, CalendarClock, FileLock2, Fingerprint, Hospital, KeyRound, MessageSquareText, ShieldCheck, Sparkles, Stethoscope, TimerReset } from "lucide-react";
 import { AnimatedWords, FisheyeDock, FlowPill, GlassPanel, KineticMarquee, LensCard, MotionStat, ProfilePlacard, ScanFrame, SpotlightCard } from "../components/reactbits-inspired";
 
 interface TimelineStep {
@@ -9,13 +9,23 @@ interface TimelineStep {
 
 const timelineSteps: TimelineStep[] = [
   {
-    title: "Identity check",
-    body: "Patient profile is bound to Emirates ID, passport, email, and a verified access PIN.",
+    title: "Feedback report",
+    body: "Patients receive a readable report with doctor guidance, readiness score, and next action items.",
+    icon: <MessageSquareText className="h-4 w-4" />,
+  },
+  {
+    title: "Book doctors",
+    body: "Patients can choose specialists, compare next slots, and request appointments from inside the app.",
+    icon: <CalendarClock className="h-4 w-4" />,
+  },
+  {
+    title: "Emirates ID lookup",
+    body: "Hospital teams select patients by Emirates ID first, preventing name clashes across similar patient records.",
     icon: <Fingerprint className="h-4 w-4" />,
   },
   {
-    title: "Hospital scope",
-    body: "Doctors can add records only when the consultation and hospital relationship are active.",
+    title: "Hospital facilities",
+    body: "Each hospital page can show care facilities, diagnostics, connected apps, and available departments.",
     icon: <Hospital className="h-4 w-4" />,
   },
   {
@@ -203,7 +213,7 @@ export default function HomePage() {
                 Profile-led medical infrastructure with controlled clinical authoring.
               </h2>
             </div>
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
               {timelineSteps.map((step, index) => (
                 <SpotlightCard className="animated-border p-5" key={step.title}>
                   <div

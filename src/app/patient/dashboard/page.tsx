@@ -4,8 +4,10 @@ import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import {
   Activity,
+  CalendarClock,
   Check,
   Clipboard,
+  Dumbbell,
   Fingerprint,
   FileHeart,
   FileText,
@@ -13,9 +15,13 @@ import {
   HeartPulse,
   LogOut,
   LockKeyhole,
+  MapPin,
   Scale,
   ScanLine,
   ShieldCheck,
+  Smartphone,
+  Star,
+  Stethoscope,
   Thermometer,
   UserRound,
   X,
@@ -70,6 +76,37 @@ interface ShareGrant {
   recordIds: string[];
   url: string;
   status: ShareGrantStatus;
+}
+
+interface FeedbackReport {
+  title: string;
+  doctor: string;
+  hospital: string;
+  score: string;
+  summary: string;
+  actions: string[];
+}
+
+interface AppointmentDoctor {
+  id: string;
+  name: string;
+  specialty: string;
+  hospital: string;
+  nextSlot: string;
+  rating: string;
+  consultationFee: string;
+}
+
+interface HospitalFacility {
+  label: string;
+  detail: string;
+  icon: ReactNode;
+}
+
+interface ConnectedApp {
+  name: string;
+  status: string;
+  signal: string;
 }
 
 const patientIdentity: PatientIdentity = {
@@ -139,6 +176,59 @@ const healthRecords: HealthRecord[] = [
   },
 ];
 
+const feedbackReport: FeedbackReport = {
+  title: "Cardiology consultation feedback",
+  doctor: "Dr. Layla Hassan",
+  hospital: "Burjeel Hospital",
+  score: "94%",
+  summary:
+    "Patient record quality is strong. LDL requires follow-up, vitals are stable, and diagnostic documents are complete enough for a second opinion.",
+  actions: ["Repeat lipid profile in 30 days", "Book cardiology follow-up", "Share CT scan only if requested by specialist"],
+};
+
+const appointmentDoctors: AppointmentDoctor[] = [
+  {
+    id: "doc_layla",
+    name: "Dr. Layla Hassan",
+    specialty: "Consultant Cardiologist",
+    hospital: "Burjeel Hospital",
+    nextSlot: "Today, 6:30 PM",
+    rating: "4.9",
+    consultationFee: "AED 450",
+  },
+  {
+    id: "doc_mariam",
+    name: "Dr. Mariam Al Ketbi",
+    specialty: "Internal Medicine",
+    hospital: "Cleveland Clinic Abu Dhabi",
+    nextSlot: "Tomorrow, 10:15 AM",
+    rating: "4.8",
+    consultationFee: "AED 390",
+  },
+  {
+    id: "doc_omar",
+    name: "Dr. Omar Siddiqui",
+    specialty: "Radiology Review",
+    hospital: "Mediclinic City Hospital",
+    nextSlot: "Fri, 2:00 PM",
+    rating: "4.7",
+    consultationFee: "AED 320",
+  },
+];
+
+const hospitalFacilities: HospitalFacility[] = [
+  { label: "Cardiology wing", detail: "ECG, stress test, echo lab", icon: <HeartPulse className="h-4 w-4" /> },
+  { label: "Radiology center", detail: "CT, MRI, ultrasound, DICOM exports", icon: <ScanLine className="h-4 w-4" /> },
+  { label: "Lab diagnostics", detail: "CBC, lipid panel, HbA1c, CRP", icon: <FlaskConical className="h-4 w-4" /> },
+  { label: "Rehab support", detail: "Physio and wellness follow-up", icon: <Dumbbell className="h-4 w-4" /> },
+];
+
+const connectedApps: ConnectedApp[] = [
+  { name: "Apple Health", status: "Ready to sync", signal: "Vitals and steps" },
+  { name: "Google Fit", status: "Available", signal: "Activity timeline" },
+  { name: "Hospital HIS", status: "Connected", signal: "Doctor-authored files" },
+];
+
 const categoryStyles: Record<HealthCategory, CategoryStyle> = {
   "Blood Metrics": {
     label: "Blood Metrics",
@@ -177,6 +267,7 @@ export default function PatientDashboardPage() {
   const [copyLabel, setCopyLabel] = useState("Copy");
   const [records] = useState<HealthRecord[]>(healthRecords);
   const [authStatus, setAuthStatus] = useState<"checking" | "authenticated">("checking");
+  const [requestedDoctorId, setRequestedDoctorId] = useState<string | null>(null);
 
   const allSelected = selectedRecords.length === records.length;
 
@@ -323,6 +414,14 @@ export default function PatientDashboardPage() {
               <LogOut className="h-4 w-4" />
               Logout
             </button>
+            <button
+              aria-label="Logout"
+              onClick={signOutPatient}
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm transition-all duration-200 hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700 sm:hidden"
+              type="button"
+            >
+              <LogOut className="h-4 w-4" />
+            </button>
           </div>
         </nav>
       </header>
@@ -453,6 +552,124 @@ export default function PatientDashboardPage() {
               ))}
             </div>
           </GlassPanel>
+        </div>
+
+        <div className="mb-8 grid gap-4 xl:grid-cols-[1.05fr_1.2fr_0.9fr]">
+          <GlassPanel className="p-5" strong>
+            <div className="mb-4 flex items-start justify-between gap-4">
+              <div>
+                <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700 ring-1 ring-indigo-100">
+                  <FileHeart className="h-3.5 w-3.5" />
+                  Patient feedback report
+                </div>
+                <h2 className="text-xl font-semibold tracking-tight text-slate-950">{feedbackReport.title}</h2>
+                <p className="mt-2 text-sm leading-6 text-slate-500">
+                  {feedbackReport.doctor} · {feedbackReport.hospital}
+                </p>
+              </div>
+              <div className="rounded-2xl bg-emerald-50 px-4 py-3 text-center ring-1 ring-emerald-100">
+                <p className="text-xs font-semibold text-emerald-700">Readiness</p>
+                <p className="mt-1 text-2xl font-semibold text-emerald-700">{feedbackReport.score}</p>
+              </div>
+            </div>
+            <p className="text-sm leading-6 text-slate-600">{feedbackReport.summary}</p>
+            <div className="mt-4 space-y-2">
+              {feedbackReport.actions.map((action) => (
+                <div key={action} className="flex items-center gap-2 rounded-2xl border border-slate-100 bg-white/80 px-3 py-2 text-sm font-medium text-slate-600">
+                  <Check className="h-4 w-4 text-emerald-500" />
+                  {action}
+                </div>
+              ))}
+            </div>
+          </GlassPanel>
+
+          <GlassPanel className="p-5" strong>
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <div>
+                <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-violet-50 px-3 py-1.5 text-xs font-semibold text-violet-700 ring-1 ring-violet-100">
+                  <CalendarClock className="h-3.5 w-3.5" />
+                  Book care inside Better Life
+                </div>
+                <h2 className="text-xl font-semibold tracking-tight text-slate-950">Pick a doctor and request an appointment</h2>
+              </div>
+            </div>
+            <div className="grid gap-3 md:grid-cols-3 xl:grid-cols-1">
+              {appointmentDoctors.map((doctor) => (
+                <div key={doctor.id} className="rounded-2xl border border-slate-100 bg-white/85 p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-indigo-100 hover:shadow-xl hover:shadow-indigo-100/60">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-semibold text-slate-950">{doctor.name}</p>
+                      <p className="mt-1 text-xs font-medium text-slate-500">{doctor.specialty}</p>
+                    </div>
+                    <span className="flex items-center gap-1 rounded-full bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-700 ring-1 ring-amber-100">
+                      <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
+                      {doctor.rating}
+                    </span>
+                  </div>
+                  <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
+                    <div className="rounded-xl bg-slate-50 p-2">
+                      <p className="font-medium text-slate-400">Next slot</p>
+                      <p className="mt-1 font-semibold text-slate-800">{doctor.nextSlot}</p>
+                    </div>
+                    <div className="rounded-xl bg-slate-50 p-2">
+                      <p className="font-medium text-slate-400">Fee</p>
+                      <p className="mt-1 font-semibold text-slate-800">{doctor.consultationFee}</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setRequestedDoctorId(doctor.id)}
+                    className={`mt-3 flex w-full items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-xs font-semibold transition-all duration-200 ${
+                      requestedDoctorId === doctor.id
+                        ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100"
+                        : "bg-indigo-600 text-white hover:bg-indigo-700"
+                    }`}
+                    type="button"
+                  >
+                    {requestedDoctorId === doctor.id ? <Check className="h-3.5 w-3.5" /> : <CalendarClock className="h-3.5 w-3.5" />}
+                    {requestedDoctorId === doctor.id ? "Appointment requested" : "Request appointment"}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </GlassPanel>
+
+          <div className="space-y-4">
+            <GlassPanel className="p-5">
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-100">
+                <MapPin className="h-3.5 w-3.5" />
+                Hospital facilities
+              </div>
+              <div className="space-y-3">
+                {hospitalFacilities.map((facility) => (
+                  <div key={facility.label} className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-white/80 p-3">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 ring-1 ring-indigo-100">{facility.icon}</div>
+                    <div>
+                      <p className="text-sm font-semibold text-slate-950">{facility.label}</p>
+                      <p className="mt-0.5 text-xs text-slate-500">{facility.detail}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </GlassPanel>
+
+            <GlassPanel className="p-5">
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-sky-50 px-3 py-1.5 text-xs font-semibold text-sky-700 ring-1 ring-sky-100">
+                <Smartphone className="h-3.5 w-3.5" />
+                Connected apps
+              </div>
+              <div className="space-y-3">
+                {connectedApps.map((app) => (
+                  <div key={app.name} className="rounded-2xl border border-slate-100 bg-white/80 p-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-sm font-semibold text-slate-950">{app.name}</p>
+                      <span className="rounded-full bg-emerald-50 px-2 py-1 text-[11px] font-semibold text-emerald-700 ring-1 ring-emerald-100">{app.status}</span>
+                    </div>
+                    <p className="mt-1 text-xs text-slate-500">{app.signal}</p>
+                  </div>
+                ))}
+              </div>
+            </GlassPanel>
+          </div>
         </div>
 
         <div className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.04)]">

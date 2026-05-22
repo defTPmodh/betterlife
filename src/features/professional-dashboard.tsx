@@ -47,6 +47,8 @@ interface PatientSummary {
   passportNo: string;
   activeConsultationHospital: string;
   consultationReason: string;
+  lastVisit: string;
+  recordCount: number;
 }
 
 interface DoctorRecord {
@@ -87,16 +89,44 @@ const professionalAccounts: ProfessionalAccount[] = [
   },
 ];
 
-const selectedPatient: PatientSummary = {
-  id: "00000000-0000-0000-0000-000000000001",
-  profileId: "BL-PROFILE-UAE-000001",
-  name: "Amina Mansoor",
-  age: 42,
-  emiratesId: "784-1984-1234567-1",
-  passportNo: "P7842190",
-  activeConsultationHospital: "Burjeel Hospital",
-  consultationReason: "Cardiology consultation and diagnostic follow-up",
-};
+const patientQueue: PatientSummary[] = [
+  {
+    id: "00000000-0000-0000-0000-000000000001",
+    profileId: "BL-PROFILE-UAE-000001",
+    name: "Amina Mansoor",
+    age: 42,
+    emiratesId: "784-1984-1234567-1",
+    passportNo: "P7842190",
+    activeConsultationHospital: "Burjeel Hospital",
+    consultationReason: "Cardiology consultation and diagnostic follow-up",
+    lastVisit: "May 18, 2026",
+    recordCount: 4,
+  },
+  {
+    id: "00000000-0000-0000-0000-000000000002",
+    profileId: "BL-PROFILE-UAE-000002",
+    name: "Khalid Al Mazrouei",
+    age: 36,
+    emiratesId: "784-1990-2233445-8",
+    passportNo: "P8821043",
+    activeConsultationHospital: "Burjeel Hospital",
+    consultationReason: "Orthopedic imaging review",
+    lastVisit: "May 16, 2026",
+    recordCount: 3,
+  },
+  {
+    id: "00000000-0000-0000-0000-000000000003",
+    profileId: "BL-PROFILE-UAE-000003",
+    name: "Sara Al Falasi",
+    age: 29,
+    emiratesId: "784-1997-4455667-2",
+    passportNo: "P4478109",
+    activeConsultationHospital: "Burjeel Hospital",
+    consultationReason: "Endocrinology lab follow-up",
+    lastVisit: "May 14, 2026",
+    recordCount: 5,
+  },
+];
 
 const initialRecords: DoctorRecord[] = [
   {
@@ -126,6 +156,12 @@ const uploadSteps: UploadStep[] = [
   { label: "Patient profile sealed", stage: "secured" },
 ];
 
+const doctorViewNotes = [
+  "Search and select by Emirates ID first to avoid patient name clashes.",
+  "Doctor uploads are only enabled when hospital and consultation match.",
+  "Patients can view and share records, but cannot edit doctor-authored files.",
+];
+
 function inferCategory(fileName: string): HealthCategory {
   const normalized = fileName.toLowerCase();
   if (normalized.includes("ct") || normalized.includes("scan") || normalized.includes("mri") || normalized.includes("xray")) return "Radiology Scans";
@@ -141,8 +177,20 @@ function getRecordIcon(category: HealthCategory) {
   return <FileHeart className="h-4 w-4 text-amber-600" />;
 }
 
+function getInitials(name: string) {
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase();
+}
+
 export default function DoctorLoginPage() {
   const [selectedAccountId, setSelectedAccountId] = useState(professionalAccounts[0].id);
+  const [selectedPatientId, setSelectedPatientId] = useState(patientQueue[0].id);
+  const [patientLookup, setPatientLookup] = useState("");
   const [pin, setPin] = useState("");
   const [error, setError] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -153,6 +201,22 @@ export default function DoctorLoginPage() {
   const selectedAccount = useMemo(
     () => professionalAccounts.find((account) => account.id === selectedAccountId) ?? professionalAccounts[0],
     [selectedAccountId],
+  );
+
+  const filteredPatients = useMemo(() => {
+    const normalizedLookup = patientLookup.replace(/\s/g, "").toLowerCase();
+    if (!normalizedLookup) return patientQueue;
+
+    return patientQueue.filter((patient) =>
+      patient.emiratesId.replace(/\s/g, "").toLowerCase().includes(normalizedLookup) ||
+      patient.profileId.toLowerCase().includes(normalizedLookup) ||
+      patient.passportNo.toLowerCase().includes(normalizedLookup),
+    );
+  }, [patientLookup]);
+
+  const selectedPatient = useMemo(
+    () => patientQueue.find((patient) => patient.id === selectedPatientId) ?? patientQueue[0],
+    [selectedPatientId],
   );
 
   const hasHospitalConsultAccess =
@@ -338,18 +402,59 @@ export default function DoctorLoginPage() {
         <div className="mb-8 grid gap-4 lg:grid-cols-[0.9fr_2.1fr]">
           <aside className="space-y-4">
             <SpotlightCard className="p-5">
+              <div className="mb-4">
+                <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700 ring-1 ring-indigo-100">
+                  <Fingerprint className="h-3.5 w-3.5" />
+                  Emirates ID first lookup
+                </div>
+                <input
+                  value={patientLookup}
+                  onChange={(event) => setPatientLookup(event.target.value)}
+                  placeholder="Search Emirates ID, profile ID, passport"
+                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-950 outline-none transition-all duration-200 placeholder:font-medium placeholder:text-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+              <div className="mb-4 space-y-2">
+                {filteredPatients.map((patient) => {
+                  const active = selectedPatient.id === patient.id;
+                  return (
+                    <button
+                      key={patient.id}
+                      onClick={() => setSelectedPatientId(patient.id)}
+                      className={`w-full rounded-2xl border p-3 text-left transition-all duration-200 ${
+                        active ? "border-indigo-200 bg-indigo-50 text-indigo-900" : "border-slate-100 bg-white/80 text-slate-700 hover:bg-slate-50"
+                      }`}
+                      type="button"
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="font-mono text-xs font-semibold">{patient.emiratesId}</span>
+                        <span className="rounded-full bg-white px-2 py-1 text-[11px] font-semibold text-slate-500 ring-1 ring-slate-100">
+                          {patient.recordCount} records
+                        </span>
+                      </div>
+                      <p className="mt-1 text-xs font-medium text-slate-500">{patient.profileId} · {patient.lastVisit}</p>
+                    </button>
+                  );
+                })}
+                {filteredPatients.length === 0 && (
+                  <div className="rounded-2xl border border-amber-100 bg-amber-50 p-4 text-sm leading-6 text-amber-900">
+                    No patient found. Search by full or partial Emirates ID, profile ID, or passport number.
+                  </div>
+                )}
+              </div>
               <LensCard>
                 <ProfilePlacard
                   accent="indigo"
                   eyebrow="Selected patient"
-                  initials="AM"
-                  name={selectedPatient.name}
-                  detail="Identity-linked profile currently assigned to the active hospital consultation."
+                  initials={getInitials(selectedPatient.name)}
+                  name={selectedPatient.emiratesId}
+                  detail="Patient is selected by Emirates ID first to avoid name collisions. Name is revealed only after selection."
                   meta={selectedPatient.profileId}
                   className="bg-white/88 shadow-none backdrop-blur-md"
                 />
               </LensCard>
               <div className="mt-5 space-y-3 border-t border-slate-100 pt-4 text-sm">
+                <MetaRow label="Name" value={selectedPatient.name} />
                 <MetaRow label="Age" value={`${selectedPatient.age}`} />
                 <MetaRow label="Emirates ID" value={selectedPatient.emiratesId} />
                 <MetaRow label="Passport No." value={selectedPatient.passportNo} />
@@ -364,6 +469,21 @@ export default function DoctorLoginPage() {
               <p className="text-xl font-semibold">{selectedPatient.activeConsultationHospital}</p>
               <p className="mt-2 text-sm leading-6 text-indigo-100">{selectedPatient.consultationReason}</p>
             </div>
+
+            <GlassPanel className="p-5">
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-100">
+                <ShieldCheck className="h-3.5 w-3.5" />
+                Doctor view explained
+              </div>
+              <div className="space-y-2">
+                {doctorViewNotes.map((note) => (
+                  <div key={note} className="flex gap-2 rounded-2xl border border-slate-100 bg-white/80 p-3 text-sm leading-6 text-slate-600">
+                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
+                    {note}
+                  </div>
+                ))}
+              </div>
+            </GlassPanel>
           </aside>
 
           <div className="space-y-4">
