@@ -756,18 +756,31 @@ export default function PatientDashboardPage() {
                       <p className="mt-1 font-semibold text-slate-800">{doctor.consultationFee}</p>
                     </div>
                   </div>
-                  <button
-                    onClick={() => setRequestedDoctorId(doctor.id)}
-                    className={`mt-3 flex w-full items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-xs font-semibold transition-all duration-200 ${
-                      requestedDoctorId === doctor.id
-                        ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100"
-                        : "bg-indigo-600 text-white hover:bg-indigo-700"
-                    }`}
-                    type="button"
-                  >
-                    {requestedDoctorId === doctor.id ? <Check className="h-3.5 w-3.5" /> : <CalendarClock className="h-3.5 w-3.5" />}
-                    {requestedDoctorId === doctor.id ? "Appointment requested" : "Request appointment"}
-                  </button>
+                  {requestedDoctorId === doctor.id ? (
+                    <div className="mt-3 grid grid-cols-[1fr_auto] gap-2">
+                      <div className="flex items-center justify-center gap-2 rounded-xl bg-emerald-50 px-3 py-2.5 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-100">
+                        <Check className="h-3.5 w-3.5" />
+                        Appointment requested
+                      </div>
+                      <button
+                        aria-label={`Cancel appointment request with ${doctor.name}`}
+                        onClick={() => setRequestedDoctorId(null)}
+                        className="flex items-center justify-center rounded-xl border border-rose-100 bg-white px-3 py-2.5 text-xs font-semibold text-rose-600 transition-all duration-200 hover:bg-rose-50"
+                        type="button"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setRequestedDoctorId(doctor.id)}
+                      className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-3 py-2.5 text-xs font-semibold text-white transition-all duration-200 hover:bg-indigo-700"
+                      type="button"
+                    >
+                      <CalendarClock className="h-3.5 w-3.5" />
+                      Request appointment
+                    </button>
+                  )}
                 </div>
               ))}
             </div>
