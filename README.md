@@ -57,6 +57,21 @@ The PostgreSQL schema is in:
 database/schema.sql
 ```
 
-Run it against a PostgreSQL 15+ database. It creates patients, hospitals, active consultations, doctors/professional accounts with separate PIN hashes, doctor-authored medical records, upload processing events, patient vital snapshots, temporary access grants, OTP verification records, and audit events.
+Run it against a PostgreSQL 15+ database first. Then run:
+
+```bash
+database/backend-data.sql
+```
+
+The second file seeds the richer backend-backed demo network: more hospitals, more doctors, more patients, patient feedback reports, appointment doctors, hospital facilities, connected apps, and Supabase views used by the frontend.
+
+The frontend now reads these Supabase views when configured:
+
+- `better_life_appointment_doctors`
+- `better_life_hospital_facilities`
+- `better_life_connected_apps`
+- `better_life_patient_feedback_reports`
+- `better_life_professional_accounts`
+- `better_life_professional_patient_queue`
 
 The schema intentionally avoids `CREATE EXTENSION`, `citext`, and `pgcrypto` so it can run in restricted hosted SQL editors. Generate UUIDs and password/PIN hashes in your backend when inserting live records.

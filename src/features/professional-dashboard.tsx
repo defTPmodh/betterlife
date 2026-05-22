@@ -1,7 +1,7 @@
 "use client";
 
 import type { ChangeEvent } from "react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Activity,
   BadgeCheck,
@@ -22,6 +22,7 @@ import {
   Stethoscope,
 } from "lucide-react";
 import { AnimatedWords, GlassPanel, KineticMarquee, LensCard, MotionStat, ProfilePlacard, SpotlightCard } from "../components/reactbits-inspired";
+import { createBrowserSupabaseClient, isSupabaseConfigured } from "../lib/supabase-browser";
 
 type ProfessionalRole = "Doctor" | "Health Professional";
 type HealthCategory = "Blood Metrics" | "Radiology Scans" | "Clinical Notes" | "Cardiology";
@@ -66,6 +67,31 @@ interface UploadStep {
   stage: UploadStage;
 }
 
+interface ProfessionalAccountRow {
+  id: string;
+  full_name: string;
+  role: "doctor" | "health_professional";
+  email: string;
+  demo_pin: string;
+  license_id: string;
+  organization_name: string;
+  hospital_name: string | null;
+  can_upload_medical_records: boolean;
+}
+
+interface PatientQueueRow {
+  id: string;
+  profile_id: string;
+  full_name: string;
+  age_years: number | null;
+  emirates_id: string | null;
+  passport_no: string | null;
+  active_consultation_hospital: string | null;
+  consultation_reason: string | null;
+  last_visit: string | null;
+  record_count: number | null;
+}
+
 const professionalAccounts: ProfessionalAccount[] = [
   {
     id: "burjeel_doctor",
@@ -86,6 +112,36 @@ const professionalAccounts: ProfessionalAccount[] = [
     licenseId: "HP-REG-88420",
     hospitalName: "Better Life Care Operations",
     canUploadMedicalRecords: false,
+  },
+  {
+    id: "burjeel_ortho",
+    name: "Dr. Faisal Rahman",
+    role: "Doctor",
+    email: "faisal.rahman@burjeel.example",
+    pin: "440218",
+    licenseId: "DHA-OR-11820",
+    hospitalName: "Burjeel Hospital",
+    canUploadMedicalRecords: true,
+  },
+  {
+    id: "cleveland_physician",
+    name: "Dr. Mariam Al Ketbi",
+    role: "Doctor",
+    email: "mariam.ketbi@cleveland.example",
+    pin: "998201",
+    licenseId: "DOH-IM-55210",
+    hospitalName: "Cleveland Clinic Abu Dhabi",
+    canUploadMedicalRecords: true,
+  },
+  {
+    id: "mediclinic_radiology",
+    name: "Dr. Omar Siddiqui",
+    role: "Doctor",
+    email: "omar.siddiqui@mediclinic.example",
+    pin: "615804",
+    licenseId: "DHA-RD-77105",
+    hospitalName: "Mediclinic City Hospital",
+    canUploadMedicalRecords: true,
   },
 ];
 
@@ -125,6 +181,54 @@ const patientQueue: PatientSummary[] = [
     consultationReason: "Endocrinology lab follow-up",
     lastVisit: "May 14, 2026",
     recordCount: 5,
+  },
+  {
+    id: "00000000-0000-0000-0000-000000000004",
+    profileId: "BL-PROFILE-UAE-000004",
+    name: "Mariam Al Hammadi",
+    age: 51,
+    emiratesId: "784-1975-7788990-4",
+    passportNo: "P3309821",
+    activeConsultationHospital: "Cleveland Clinic Abu Dhabi",
+    consultationReason: "Internal medicine medication reconciliation",
+    lastVisit: "May 12, 2026",
+    recordCount: 6,
+  },
+  {
+    id: "00000000-0000-0000-0000-000000000005",
+    profileId: "BL-PROFILE-UAE-000005",
+    name: "Yousef Al Nuaimi",
+    age: 63,
+    emiratesId: "784-1963-9900112-6",
+    passportNo: "P2190047",
+    activeConsultationHospital: "Mediclinic City Hospital",
+    consultationReason: "Radiology second opinion for abdominal CT",
+    lastVisit: "May 10, 2026",
+    recordCount: 7,
+  },
+  {
+    id: "00000000-0000-0000-0000-000000000006",
+    profileId: "BL-PROFILE-UAE-000006",
+    name: "Leila Haddad",
+    age: 34,
+    emiratesId: "784-1992-1011121-9",
+    passportNo: "P5527812",
+    activeConsultationHospital: "Saudi German Hospital Dubai",
+    consultationReason: "Neurology review and migraine treatment plan",
+    lastVisit: "May 08, 2026",
+    recordCount: 4,
+  },
+  {
+    id: "00000000-0000-0000-0000-000000000007",
+    profileId: "BL-PROFILE-UAE-000007",
+    name: "Hamdan Al Suwaidi",
+    age: 47,
+    emiratesId: "784-1979-1314151-3",
+    passportNo: "P7782301",
+    activeConsultationHospital: "NMC Royal Hospital",
+    consultationReason: "Post-surgical orthopedic follow-up",
+    lastVisit: "May 06, 2026",
+    recordCount: 8,
   },
 ];
 
@@ -188,6 +292,8 @@ function getInitials(name: string) {
 }
 
 export default function DoctorLoginPage() {
+  const [accounts, setAccounts] = useState<ProfessionalAccount[]>(professionalAccounts);
+  const [patients, setPatients] = useState<PatientSummary[]>(patientQueue);
   const [selectedAccountId, setSelectedAccountId] = useState(professionalAccounts[0].id);
   const [selectedPatientId, setSelectedPatientId] = useState(patientQueue[0].id);
   const [patientLookup, setPatientLookup] = useState("");
@@ -199,30 +305,81 @@ export default function DoctorLoginPage() {
   const [activeFileName, setActiveFileName] = useState("");
 
   const selectedAccount = useMemo(
-    () => professionalAccounts.find((account) => account.id === selectedAccountId) ?? professionalAccounts[0],
-    [selectedAccountId],
+    () => accounts.find((account) => account.id === selectedAccountId) ?? accounts[0] ?? professionalAccounts[0],
+    [accounts, selectedAccountId],
   );
 
   const filteredPatients = useMemo(() => {
     const normalizedLookup = patientLookup.replace(/\s/g, "").toLowerCase();
-    if (!normalizedLookup) return patientQueue;
+    if (!normalizedLookup) return patients;
 
-    return patientQueue.filter((patient) =>
+    return patients.filter((patient) =>
       patient.emiratesId.replace(/\s/g, "").toLowerCase().includes(normalizedLookup) ||
       patient.profileId.toLowerCase().includes(normalizedLookup) ||
       patient.passportNo.toLowerCase().includes(normalizedLookup),
     );
-  }, [patientLookup]);
+  }, [patientLookup, patients]);
 
   const selectedPatient = useMemo(
-    () => patientQueue.find((patient) => patient.id === selectedPatientId) ?? patientQueue[0],
-    [selectedPatientId],
+    () => patients.find((patient) => patient.id === selectedPatientId) ?? patients[0] ?? patientQueue[0],
+    [patients, selectedPatientId],
   );
 
   const hasHospitalConsultAccess =
     selectedAccount.role === "Doctor" &&
     selectedAccount.canUploadMedicalRecords &&
     selectedAccount.hospitalName === selectedPatient.activeConsultationHospital;
+
+  useEffect(() => {
+    if (!isSupabaseConfigured()) return;
+
+    async function loadBackendProfessionalData() {
+      const supabase = createBrowserSupabaseClient();
+      const [accountsResult, patientsResult] = await Promise.all([
+        supabase.from("better_life_professional_accounts").select("*").limit(25),
+        supabase.from("better_life_professional_patient_queue").select("*").limit(50),
+      ]);
+
+      const accountRows = (accountsResult.data ?? []) as ProfessionalAccountRow[];
+      const patientRows = (patientsResult.data ?? []) as PatientQueueRow[];
+
+      if (accountRows.length > 0) {
+        const nextAccounts = accountRows.map((account) => ({
+          id: account.id,
+          name: account.full_name,
+          role: account.role === "doctor" ? "Doctor" : "Health Professional",
+          email: account.email,
+          pin: account.demo_pin || "000000",
+          licenseId: account.license_id,
+          hospitalName: account.hospital_name ?? account.organization_name,
+          canUploadMedicalRecords: account.can_upload_medical_records,
+        })) satisfies ProfessionalAccount[];
+
+        setAccounts(nextAccounts);
+        setSelectedAccountId((current) => (nextAccounts.some((account) => account.id === current) ? current : nextAccounts[0].id));
+      }
+
+      if (patientRows.length > 0) {
+        const nextPatients = patientRows.map((patient) => ({
+          id: patient.id,
+          profileId: patient.profile_id,
+          name: patient.full_name,
+          age: patient.age_years ?? 0,
+          emiratesId: patient.emirates_id ?? "Pending Emirates ID",
+          passportNo: patient.passport_no ?? "Pending passport",
+          activeConsultationHospital: patient.active_consultation_hospital ?? "Unassigned hospital",
+          consultationReason: patient.consultation_reason ?? "No active consultation reason",
+          lastVisit: patient.last_visit ?? "No visit recorded",
+          recordCount: patient.record_count ?? 0,
+        })) satisfies PatientSummary[];
+
+        setPatients(nextPatients);
+        setSelectedPatientId((current) => (nextPatients.some((patient) => patient.id === current) ? current : nextPatients[0].id));
+      }
+    }
+
+    loadBackendProfessionalData();
+  }, []);
 
   function authenticate() {
     if (pin === selectedAccount.pin) {
@@ -297,7 +454,7 @@ export default function DoctorLoginPage() {
               </div>
 
               <div className="mt-8 space-y-3">
-                {professionalAccounts.map((account) => (
+                {accounts.map((account) => (
                   <button
                     key={account.id}
                     onClick={() => {

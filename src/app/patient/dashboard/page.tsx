@@ -109,6 +109,40 @@ interface ConnectedApp {
   signal: string;
 }
 
+interface AppointmentDoctorRow {
+  id: string;
+  full_name: string;
+  specialty: string;
+  hospital: string;
+  next_slot_label: string;
+  rating: string;
+  consultation_fee: string;
+}
+
+interface HospitalFacilityRow {
+  id: string;
+  label: string;
+  detail: string;
+  icon_key: string;
+}
+
+interface ConnectedAppRow {
+  id: string;
+  name: string;
+  status: string;
+  signal: string;
+}
+
+interface FeedbackReportRow {
+  id: string;
+  title: string;
+  doctor: string | null;
+  hospital: string | null;
+  score: string;
+  summary: string;
+  actions: unknown;
+}
+
 const patientIdentity: PatientIdentity = {
   profileId: "BL-PROFILE-UAE-000001",
   name: "Amina Mansoor",
@@ -214,6 +248,33 @@ const appointmentDoctors: AppointmentDoctor[] = [
     rating: "4.7",
     consultationFee: "AED 320",
   },
+  {
+    id: "doc_noura",
+    name: "Dr. Noura Al Hameli",
+    specialty: "Endocrinology",
+    hospital: "Sheikh Shakhbout Medical City",
+    nextSlot: "Sat, 11:45 AM",
+    rating: "4.9",
+    consultationFee: "AED 410",
+  },
+  {
+    id: "doc_faisal",
+    name: "Dr. Faisal Rahman",
+    specialty: "Orthopedic Surgery",
+    hospital: "NMC Royal Hospital",
+    nextSlot: "Mon, 9:00 AM",
+    rating: "4.6",
+    consultationFee: "AED 360",
+  },
+  {
+    id: "doc_elena",
+    name: "Dr. Elena Petrova",
+    specialty: "Neurology",
+    hospital: "Saudi German Hospital Dubai",
+    nextSlot: "Tue, 4:20 PM",
+    rating: "4.8",
+    consultationFee: "AED 520",
+  },
 ];
 
 const hospitalFacilities: HospitalFacility[] = [
@@ -221,13 +282,34 @@ const hospitalFacilities: HospitalFacility[] = [
   { label: "Radiology center", detail: "CT, MRI, ultrasound, DICOM exports", icon: <ScanLine className="h-4 w-4" /> },
   { label: "Lab diagnostics", detail: "CBC, lipid panel, HbA1c, CRP", icon: <FlaskConical className="h-4 w-4" /> },
   { label: "Rehab support", detail: "Physio and wellness follow-up", icon: <Dumbbell className="h-4 w-4" /> },
+  { label: "Emergency care", detail: "24/7 triage, trauma, urgent imaging", icon: <ShieldCheck className="h-4 w-4" /> },
+  { label: "Telehealth suites", detail: "Remote specialist consultations", icon: <Smartphone className="h-4 w-4" /> },
 ];
 
 const connectedApps: ConnectedApp[] = [
   { name: "Apple Health", status: "Ready to sync", signal: "Vitals and steps" },
   { name: "Google Fit", status: "Available", signal: "Activity timeline" },
   { name: "Hospital HIS", status: "Connected", signal: "Doctor-authored files" },
+  { name: "Samsung Health", status: "Available", signal: "Wearable vitals" },
+  { name: "DHA systems", status: "Planned", signal: "Regional health identity" },
 ];
+
+function getFacilityIcon(iconKey: string) {
+  if (iconKey === "heart") return <HeartPulse className="h-4 w-4" />;
+  if (iconKey === "scan") return <ScanLine className="h-4 w-4" />;
+  if (iconKey === "lab") return <FlaskConical className="h-4 w-4" />;
+  if (iconKey === "rehab") return <Dumbbell className="h-4 w-4" />;
+  if (iconKey === "phone") return <Smartphone className="h-4 w-4" />;
+  return <ShieldCheck className="h-4 w-4" />;
+}
+
+function parseFeedbackActions(actions: unknown) {
+  if (Array.isArray(actions)) {
+    return actions.filter((action): action is string => typeof action === "string");
+  }
+
+  return feedbackReport.actions;
+}
 
 const categoryStyles: Record<HealthCategory, CategoryStyle> = {
   "Blood Metrics": {
@@ -268,6 +350,10 @@ export default function PatientDashboardPage() {
   const [records] = useState<HealthRecord[]>(healthRecords);
   const [authStatus, setAuthStatus] = useState<"checking" | "authenticated">("checking");
   const [requestedDoctorId, setRequestedDoctorId] = useState<string | null>(null);
+  const [liveFeedbackReport, setLiveFeedbackReport] = useState<FeedbackReport>(feedbackReport);
+  const [liveAppointmentDoctors, setLiveAppointmentDoctors] = useState<AppointmentDoctor[]>(appointmentDoctors);
+  const [liveHospitalFacilities, setLiveHospitalFacilities] = useState<HospitalFacility[]>(hospitalFacilities);
+  const [liveConnectedApps, setLiveConnectedApps] = useState<ConnectedApp[]>(connectedApps);
 
   const allSelected = selectedRecords.length === records.length;
 
@@ -296,6 +382,7 @@ export default function PatientDashboardPage() {
       }
 
       setAuthStatus("authenticated");
+      await loadBackendDashboardData(supabase);
     }
 
     checkPatientSession();
@@ -304,6 +391,59 @@ export default function PatientDashboardPage() {
       active = false;
     };
   }, []);
+
+  async function loadBackendDashboardData(supabase: ReturnType<typeof createBrowserSupabaseClient>) {
+    const [feedbackResult, doctorsResult, facilitiesResult, appsResult] = await Promise.all([
+      supabase.from("better_life_patient_feedback_reports").select("*").eq("patient_id", patientIdentity.profileId === "BL-PROFILE-UAE-000001" ? "00000000-0000-0000-0000-000000000001" : "").limit(1),
+      supabase.from("better_life_appointment_doctors").select("*").limit(12),
+      supabase.from("better_life_hospital_facilities").select("*").limit(12),
+      supabase.from("better_life_connected_apps").select("*").limit(12),
+    ]);
+
+    const feedbackRows = (feedbackResult.data ?? []) as FeedbackReportRow[];
+    const doctorRows = (doctorsResult.data ?? []) as AppointmentDoctorRow[];
+    const facilityRows = (facilitiesResult.data ?? []) as HospitalFacilityRow[];
+    const appRows = (appsResult.data ?? []) as ConnectedAppRow[];
+
+    if (feedbackRows[0]) {
+      setLiveFeedbackReport({
+        title: feedbackRows[0].title,
+        doctor: feedbackRows[0].doctor ?? "Assigned doctor",
+        hospital: feedbackRows[0].hospital ?? "Assigned hospital",
+        score: feedbackRows[0].score,
+        summary: feedbackRows[0].summary,
+        actions: parseFeedbackActions(feedbackRows[0].actions),
+      });
+    }
+
+    if (doctorRows.length > 0) {
+      setLiveAppointmentDoctors(
+        doctorRows.map((doctor) => ({
+          id: doctor.id,
+          name: doctor.full_name,
+          specialty: doctor.specialty,
+          hospital: doctor.hospital,
+          nextSlot: doctor.next_slot_label,
+          rating: doctor.rating,
+          consultationFee: doctor.consultation_fee,
+        })),
+      );
+    }
+
+    if (facilityRows.length > 0) {
+      setLiveHospitalFacilities(
+        facilityRows.map((facility) => ({
+          label: facility.label,
+          detail: facility.detail,
+          icon: getFacilityIcon(facility.icon_key),
+        })),
+      );
+    }
+
+    if (appRows.length > 0) {
+      setLiveConnectedApps(appRows.map((app) => ({ name: app.name, status: app.status, signal: app.signal })));
+    }
+  }
 
   function toggleRecord(recordId: string) {
     setSecureLink("");
@@ -562,19 +702,19 @@ export default function PatientDashboardPage() {
                   <FileHeart className="h-3.5 w-3.5" />
                   Patient feedback report
                 </div>
-                <h2 className="text-xl font-semibold tracking-tight text-slate-950">{feedbackReport.title}</h2>
+                <h2 className="text-xl font-semibold tracking-tight text-slate-950">{liveFeedbackReport.title}</h2>
                 <p className="mt-2 text-sm leading-6 text-slate-500">
-                  {feedbackReport.doctor} · {feedbackReport.hospital}
+                  {liveFeedbackReport.doctor} · {liveFeedbackReport.hospital}
                 </p>
               </div>
               <div className="rounded-2xl bg-emerald-50 px-4 py-3 text-center ring-1 ring-emerald-100">
                 <p className="text-xs font-semibold text-emerald-700">Readiness</p>
-                <p className="mt-1 text-2xl font-semibold text-emerald-700">{feedbackReport.score}</p>
+                <p className="mt-1 text-2xl font-semibold text-emerald-700">{liveFeedbackReport.score}</p>
               </div>
             </div>
-            <p className="text-sm leading-6 text-slate-600">{feedbackReport.summary}</p>
+            <p className="text-sm leading-6 text-slate-600">{liveFeedbackReport.summary}</p>
             <div className="mt-4 space-y-2">
-              {feedbackReport.actions.map((action) => (
+              {liveFeedbackReport.actions.map((action) => (
                 <div key={action} className="flex items-center gap-2 rounded-2xl border border-slate-100 bg-white/80 px-3 py-2 text-sm font-medium text-slate-600">
                   <Check className="h-4 w-4 text-emerald-500" />
                   {action}
@@ -594,7 +734,7 @@ export default function PatientDashboardPage() {
               </div>
             </div>
             <div className="grid gap-3 md:grid-cols-3 xl:grid-cols-1">
-              {appointmentDoctors.map((doctor) => (
+              {liveAppointmentDoctors.map((doctor) => (
                 <div key={doctor.id} className="rounded-2xl border border-slate-100 bg-white/85 p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-indigo-100 hover:shadow-xl hover:shadow-indigo-100/60">
                   <div className="flex items-start justify-between gap-3">
                     <div>
@@ -640,7 +780,7 @@ export default function PatientDashboardPage() {
                 Hospital facilities
               </div>
               <div className="space-y-3">
-                {hospitalFacilities.map((facility) => (
+                {liveHospitalFacilities.map((facility) => (
                   <div key={facility.label} className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-white/80 p-3">
                     <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 ring-1 ring-indigo-100">{facility.icon}</div>
                     <div>
@@ -658,7 +798,7 @@ export default function PatientDashboardPage() {
                 Connected apps
               </div>
               <div className="space-y-3">
-                {connectedApps.map((app) => (
+                {liveConnectedApps.map((app) => (
                   <div key={app.name} className="rounded-2xl border border-slate-100 bg-white/80 p-3">
                     <div className="flex items-center justify-between gap-3">
                       <p className="text-sm font-semibold text-slate-950">{app.name}</p>
