@@ -54,12 +54,23 @@ interface PatientSummary {
 
 interface DoctorRecord {
   id: string;
+  patientId: string;
   fileName: string;
   category: HealthCategory;
   addedBy: string;
   hospitalName: string;
   uploadedAt: string;
   size: string;
+}
+
+interface PatientFeedback {
+  id: string;
+  patientId: string;
+  title: string;
+  doctor: string;
+  hospital: string;
+  score: string;
+  summary: string;
 }
 
 interface UploadStep {
@@ -90,6 +101,27 @@ interface PatientQueueRow {
   consultation_reason: string | null;
   last_visit: string | null;
   record_count: number | null;
+}
+
+interface ProfessionalRecordRow {
+  id: string;
+  patient_id: string;
+  file_name: string;
+  category: string;
+  added_by: string | null;
+  hospital_name: string | null;
+  uploaded_at_label: string | null;
+  size_label: string;
+}
+
+interface ProfessionalFeedbackRow {
+  id: string;
+  patient_id: string;
+  title: string;
+  doctor: string | null;
+  hospital: string | null;
+  score: string;
+  summary: string;
 }
 
 const professionalAccounts: ProfessionalAccount[] = [
@@ -235,6 +267,7 @@ const patientQueue: PatientSummary[] = [
 const initialRecords: DoctorRecord[] = [
   {
     id: "rec_001",
+    patientId: "00000000-0000-0000-0000-000000000001",
     fileName: "Complete Blood Count - Emirates Hospital.pdf",
     category: "Blood Metrics",
     addedBy: "Dr. Layla Hassan",
@@ -244,12 +277,83 @@ const initialRecords: DoctorRecord[] = [
   },
   {
     id: "rec_002",
+    patientId: "00000000-0000-0000-0000-000000000001",
     fileName: "Chest CT Scan - Diagnostic Series.dcm",
     category: "Radiology Scans",
     addedBy: "Dr. Layla Hassan",
     hospitalName: "Burjeel Hospital",
     uploadedAt: "May 12, 2026",
     size: "12.8 MB",
+  },
+  {
+    id: "rec_003",
+    patientId: "00000000-0000-0000-0000-000000000002",
+    fileName: "Right Knee MRI - Orthopedic Review.dcm",
+    category: "Radiology Scans",
+    addedBy: "Dr. Faisal Rahman",
+    hospitalName: "Burjeel Hospital",
+    uploadedAt: "May 16, 2026",
+    size: "18.4 MB",
+  },
+  {
+    id: "rec_004",
+    patientId: "00000000-0000-0000-0000-000000000003",
+    fileName: "Endocrine Lab Panel.pdf",
+    category: "Blood Metrics",
+    addedBy: "Dr. Noura Al Hameli",
+    hospitalName: "Sheikh Shakhbout Medical City",
+    uploadedAt: "May 14, 2026",
+    size: "704 KB",
+  },
+  {
+    id: "rec_005",
+    patientId: "00000000-0000-0000-0000-000000000004",
+    fileName: "Medication Reconciliation Notes.pdf",
+    category: "Clinical Notes",
+    addedBy: "Dr. Mariam Al Ketbi",
+    hospitalName: "Cleveland Clinic Abu Dhabi",
+    uploadedAt: "May 12, 2026",
+    size: "412 KB",
+  },
+  {
+    id: "rec_006",
+    patientId: "00000000-0000-0000-0000-000000000005",
+    fileName: "Abdominal CT Second Opinion.dcm",
+    category: "Radiology Scans",
+    addedBy: "Dr. Omar Siddiqui",
+    hospitalName: "Mediclinic City Hospital",
+    uploadedAt: "May 10, 2026",
+    size: "21.6 MB",
+  },
+];
+
+const initialFeedback: PatientFeedback[] = [
+  {
+    id: "fb_001",
+    patientId: "00000000-0000-0000-0000-000000000001",
+    title: "Cardiology consultation feedback",
+    doctor: "Dr. Layla Hassan",
+    hospital: "Burjeel Hospital",
+    score: "94%",
+    summary: "LDL requires follow-up, vitals are stable, and diagnostic documents are complete enough for a second opinion.",
+  },
+  {
+    id: "fb_002",
+    patientId: "00000000-0000-0000-0000-000000000002",
+    title: "Orthopedic imaging feedback",
+    doctor: "Dr. Faisal Rahman",
+    hospital: "Burjeel Hospital",
+    score: "88%",
+    summary: "MRI is ready for surgical review. Recommend physiotherapy evaluation before invasive treatment decisions.",
+  },
+  {
+    id: "fb_003",
+    patientId: "00000000-0000-0000-0000-000000000005",
+    title: "Radiology second opinion feedback",
+    doctor: "Dr. Omar Siddiqui",
+    hospital: "Mediclinic City Hospital",
+    score: "91%",
+    summary: "Abdominal CT is complete. Follow-up contrast comparison is recommended if symptoms persist.",
   },
 ];
 
@@ -301,6 +405,7 @@ export default function DoctorLoginPage() {
   const [error, setError] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [records, setRecords] = useState<DoctorRecord[]>(initialRecords);
+  const [feedbackReports, setFeedbackReports] = useState<PatientFeedback[]>(initialFeedback);
   const [uploadStage, setUploadStage] = useState<UploadStage>("idle");
   const [activeFileName, setActiveFileName] = useState("");
 
@@ -309,20 +414,35 @@ export default function DoctorLoginPage() {
     [accounts, selectedAccountId],
   );
 
+  const patientsForSelectedAccount = useMemo(() => {
+    if (selectedAccount.role !== "Doctor") return patients;
+    return patients.filter((patient) => patient.activeConsultationHospital === selectedAccount.hospitalName);
+  }, [patients, selectedAccount.hospitalName, selectedAccount.role]);
+
   const filteredPatients = useMemo(() => {
     const normalizedLookup = patientLookup.replace(/\s/g, "").toLowerCase();
-    if (!normalizedLookup) return patients;
+    if (!normalizedLookup) return patientsForSelectedAccount;
 
-    return patients.filter((patient) =>
+    return patientsForSelectedAccount.filter((patient) =>
       patient.emiratesId.replace(/\s/g, "").toLowerCase().includes(normalizedLookup) ||
       patient.profileId.toLowerCase().includes(normalizedLookup) ||
       patient.passportNo.toLowerCase().includes(normalizedLookup),
     );
-  }, [patientLookup, patients]);
+  }, [patientLookup, patientsForSelectedAccount]);
 
   const selectedPatient = useMemo(
-    () => patients.find((patient) => patient.id === selectedPatientId) ?? patients[0] ?? patientQueue[0],
-    [patients, selectedPatientId],
+    () => patientsForSelectedAccount.find((patient) => patient.id === selectedPatientId) ?? patientsForSelectedAccount[0] ?? patientQueue[0],
+    [patientsForSelectedAccount, selectedPatientId],
+  );
+
+  const selectedPatientRecords = useMemo(
+    () => records.filter((record) => record.patientId === selectedPatient.id),
+    [records, selectedPatient.id],
+  );
+
+  const selectedPatientFeedback = useMemo(
+    () => feedbackReports.filter((report) => report.patientId === selectedPatient.id),
+    [feedbackReports, selectedPatient.id],
   );
 
   const hasHospitalConsultAccess =
@@ -335,13 +455,17 @@ export default function DoctorLoginPage() {
 
     async function loadBackendProfessionalData() {
       const supabase = createBrowserSupabaseClient();
-      const [accountsResult, patientsResult] = await Promise.all([
+      const [accountsResult, patientsResult, recordsResult, feedbackResult] = await Promise.all([
         supabase.from("better_life_professional_accounts").select("*").limit(25),
         supabase.from("better_life_professional_patient_queue").select("*").limit(50),
+        supabase.from("better_life_professional_medical_records").select("*").limit(100),
+        supabase.from("better_life_patient_feedback_reports").select("*").limit(50),
       ]);
 
       const accountRows = (accountsResult.data ?? []) as ProfessionalAccountRow[];
       const patientRows = (patientsResult.data ?? []) as PatientQueueRow[];
+      const recordRows = (recordsResult.data ?? []) as ProfessionalRecordRow[];
+      const feedbackRows = (feedbackResult.data ?? []) as ProfessionalFeedbackRow[];
 
       if (accountRows.length > 0) {
         const nextAccounts = accountRows.map((account) => ({
@@ -376,10 +500,46 @@ export default function DoctorLoginPage() {
         setPatients(nextPatients);
         setSelectedPatientId((current) => (nextPatients.some((patient) => patient.id === current) ? current : nextPatients[0].id));
       }
+
+      if (recordRows.length > 0) {
+        setRecords(
+          recordRows.map((record) => ({
+            id: record.id,
+            patientId: record.patient_id,
+            fileName: record.file_name,
+            category: record.category === "radiology_scans" ? "Radiology Scans" : record.category === "clinical_notes" ? "Clinical Notes" : record.category === "cardiology" ? "Cardiology" : "Blood Metrics",
+            addedBy: record.added_by ?? "Assigned doctor",
+            hospitalName: record.hospital_name ?? "Assigned hospital",
+            uploadedAt: record.uploaded_at_label ?? "Recently",
+            size: record.size_label,
+          })),
+        );
+      }
+
+      if (feedbackRows.length > 0) {
+        setFeedbackReports(
+          feedbackRows.map((report) => ({
+            id: report.id,
+            patientId: report.patient_id,
+            title: report.title,
+            doctor: report.doctor ?? "Assigned doctor",
+            hospital: report.hospital ?? "Assigned hospital",
+            score: report.score,
+            summary: report.summary,
+          })),
+        );
+      }
     }
 
     loadBackendProfessionalData();
   }, []);
+
+  useEffect(() => {
+    if (patientsForSelectedAccount.length === 0) return;
+    if (!patientsForSelectedAccount.some((patient) => patient.id === selectedPatientId)) {
+      setSelectedPatientId(patientsForSelectedAccount[0].id);
+    }
+  }, [patientsForSelectedAccount, selectedPatientId]);
 
   function authenticate() {
     if (pin === selectedAccount.pin) {
@@ -402,6 +562,7 @@ export default function DoctorLoginPage() {
       setRecords((current) => [
         {
           id: crypto.randomUUID(),
+          patientId: selectedPatient.id,
           fileName: file.name,
           category: inferCategory(file.name),
           addedBy: selectedAccount.name,
@@ -658,7 +819,7 @@ export default function DoctorLoginPage() {
                     Uploads are attributed to the signed-in doctor and hospital, then sealed into the patient profile for patient view-only access.
                   </p>
                 </div>
-                <MotionStat label="Hospital" value={selectedAccount.hospitalName === "Burjeel Hospital" ? "Burjeel" : "Ops"} tone="emerald" />
+                <MotionStat label="Hospital" value={selectedAccount.hospitalName === "Burjeel Hospital" ? "Burjeel" : selectedAccount.hospitalName.split(" ")[0]} tone="emerald" />
               </div>
 
               {hasHospitalConsultAccess ? (
@@ -715,11 +876,38 @@ export default function DoctorLoginPage() {
 
             <div className="overflow-hidden rounded-[2rem] border border-slate-100 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.05)]">
               <div className="border-b border-slate-100 bg-slate-50/60 px-5 py-4">
+                <p className="text-sm font-semibold text-slate-950">Previous feedback</p>
+                <p className="mt-1 text-xs text-slate-500">Feedback reports update when a different Emirates ID is selected.</p>
+              </div>
+              <div className="divide-y divide-slate-100">
+                {selectedPatientFeedback.length > 0 ? (
+                  selectedPatientFeedback.map((report) => (
+                    <div key={report.id} className="grid gap-3 px-5 py-5 md:grid-cols-[1fr_auto] md:items-start">
+                      <div>
+                        <p className="text-sm font-semibold text-slate-950">{report.title}</p>
+                        <p className="mt-1 text-xs font-medium text-slate-500">{report.doctor} · {report.hospital}</p>
+                        <p className="mt-3 text-sm leading-6 text-slate-600">{report.summary}</p>
+                      </div>
+                      <span className="w-fit rounded-2xl bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 ring-1 ring-emerald-100">
+                        {report.score}
+                      </span>
+                    </div>
+                  ))
+                ) : (
+                  <div className="px-5 py-5 text-sm leading-6 text-slate-500">
+                    No previous feedback reports have been authored for this patient yet.
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="overflow-hidden rounded-[2rem] border border-slate-100 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.05)]">
+              <div className="border-b border-slate-100 bg-slate-50/60 px-5 py-4">
                 <p className="text-sm font-semibold text-slate-950">Patient medical files</p>
                 <p className="mt-1 text-xs text-slate-500">Records here are visible to the patient, but authored by verified doctors.</p>
               </div>
               <div className="divide-y divide-slate-100">
-                {records.map((record) => (
+                {selectedPatientRecords.length > 0 ? selectedPatientRecords.map((record) => (
                   <div key={record.id} className="grid gap-4 px-5 py-5 transition-all duration-200 hover:bg-slate-50/80 md:grid-cols-[1.2fr_0.7fr_0.8fr_0.6fr] md:items-center">
                     <div className="flex min-w-0 items-center gap-3">
                       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-100 bg-white shadow-sm">{getRecordIcon(record.category)}</div>
@@ -732,7 +920,11 @@ export default function DoctorLoginPage() {
                     <p className="text-sm text-slate-500">{record.hospitalName}</p>
                     <p className="text-sm text-slate-500">{record.uploadedAt}</p>
                   </div>
-                ))}
+                )) : (
+                  <div className="px-5 py-5 text-sm leading-6 text-slate-500">
+                    No medical records have been uploaded for this selected Emirates ID yet.
+                  </div>
+                )}
               </div>
             </div>
           </div>
