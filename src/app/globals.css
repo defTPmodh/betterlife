@@ -1,0 +1,485 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+  background: #ffffff;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: #ffffff;
+  color: #0f172a;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+@keyframes better-life-gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes better-life-scan {
+  0% {
+    transform: translateY(-120%);
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(360%);
+    opacity: 0;
+  }
+}
+
+@keyframes better-life-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes better-life-orbit {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes better-life-shimmer {
+  0% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(120%);
+  }
+}
+
+@keyframes better-life-word-rise {
+  from {
+    filter: blur(10px);
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    filter: blur(0);
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes better-life-border-pan {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 200% 50%;
+  }
+}
+
+@keyframes better-life-signal {
+  0%,
+  100% {
+    opacity: 0.5;
+    transform: scaleX(0.72);
+  }
+  50% {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+}
+
+@keyframes better-life-placard-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes better-life-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes better-life-page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes better-life-line-draw {
+  from {
+    stroke-dashoffset: 900;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes better-life-grid-drift {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 48px 48px;
+  }
+}
+
+@keyframes better-life-fisheye-pulse {
+  0%,
+  100% {
+    transform: scale(1) translate3d(0, 0, 0);
+  }
+  50% {
+    transform: scale(1.035) translate3d(0, -3px, 0);
+  }
+}
+
+.animated-health-bg {
+  background:
+    radial-gradient(circle at 18% 20%, rgba(79, 70, 229, 0.12), transparent 26%),
+    radial-gradient(circle at 82% 12%, rgba(16, 185, 129, 0.12), transparent 24%),
+    linear-gradient(120deg, #ffffff, #f8fafc, #eef2ff, #ffffff);
+  background-size: 180% 180%;
+  animation: better-life-gradient-shift 14s ease infinite;
+}
+
+.advanced-health-bg {
+  background:
+    linear-gradient(90deg, rgba(15, 23, 42, 0.04) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(15, 23, 42, 0.04) 1px, transparent 1px),
+    radial-gradient(circle at 20% 20%, rgba(79, 70, 229, 0.12), transparent 28%),
+    radial-gradient(circle at 78% 18%, rgba(16, 185, 129, 0.1), transparent 24%),
+    linear-gradient(135deg, #ffffff 0%, #f8fafc 48%, #eef2ff 100%);
+  background-size: 48px 48px, 48px 48px, 180% 180%, 180% 180%, 100% 100%;
+  animation:
+    better-life-grid-drift 22s linear infinite,
+    better-life-grid-drift 22s linear infinite,
+    better-life-gradient-shift 16s ease infinite;
+}
+
+.scanline-sweep::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  height: 34%;
+  background: linear-gradient(180deg, transparent, rgba(79, 70, 229, 0.16), rgba(16, 185, 129, 0.18), transparent);
+  animation: better-life-scan 2.4s ease-in-out infinite;
+}
+
+.float-soft {
+  animation: better-life-float 5s ease-in-out infinite;
+}
+
+.orbit-slow {
+  animation: better-life-orbit 12s linear infinite;
+}
+
+.shimmer-pass {
+  overflow: hidden;
+  position: relative;
+}
+
+.shimmer-pass::before {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  width: 45%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.65), transparent);
+  animation: better-life-shimmer 2.2s ease-in-out infinite;
+}
+
+.animated-words {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.18em;
+}
+
+.animated-word {
+  display: inline-block;
+  opacity: 0;
+  animation: better-life-word-rise 720ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.spotlight-card::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  background: linear-gradient(115deg, transparent 22%, rgba(79, 70, 229, 0.14), rgba(16, 185, 129, 0.12), transparent 78%);
+  opacity: 0;
+  transition: opacity 250ms ease;
+}
+
+.spotlight-card:hover::before {
+  opacity: 1;
+}
+
+.spotlight-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(120deg, transparent, rgba(255, 255, 255, 0.48), transparent);
+  transform: translateX(-120%);
+}
+
+.spotlight-card:hover::after {
+  animation: better-life-shimmer 1.35s ease;
+}
+
+.profile-placard {
+  animation: better-life-placard-in 650ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  position: relative;
+  transition:
+    transform 220ms ease,
+    box-shadow 220ms ease,
+    border-color 220ms ease;
+}
+
+.profile-placard::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(135deg, transparent, rgba(79, 70, 229, 0.08), transparent);
+  opacity: 0;
+  transition: opacity 220ms ease;
+}
+
+.profile-placard:hover {
+  border-color: rgba(79, 70, 229, 0.18);
+  box-shadow: 0 28px 90px rgba(15, 23, 42, 0.12);
+  transform: translateY(-4px);
+}
+
+.profile-placard:hover::after {
+  opacity: 1;
+}
+
+.flow-pill {
+  transition:
+    transform 220ms ease,
+    border-color 220ms ease,
+    box-shadow 220ms ease;
+}
+
+.flow-pill:hover {
+  border-color: rgba(79, 70, 229, 0.18);
+  box-shadow: 0 18px 60px rgba(15, 23, 42, 0.08);
+  transform: translateY(-3px);
+}
+
+.signal-line {
+  transform-origin: left center;
+  animation: better-life-signal 2s ease-in-out infinite;
+}
+
+.animated-border {
+  background:
+    linear-gradient(#ffffff, #ffffff) padding-box,
+    linear-gradient(110deg, rgba(79, 70, 229, 0.15), rgba(16, 185, 129, 0.24), rgba(14, 165, 233, 0.16), rgba(79, 70, 229, 0.15)) border-box;
+  background-size: 100% 100%, 200% 200%;
+  border: 1px solid transparent;
+  animation: better-life-border-pan 8s linear infinite;
+}
+
+.page-enter {
+  animation: better-life-page-enter 580ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.kinetic-marquee-track {
+  animation: better-life-marquee 24s linear infinite;
+}
+
+.kinetic-marquee:hover .kinetic-marquee-track {
+  animation-play-state: paused;
+}
+
+.motion-stat {
+  position: relative;
+  overflow: hidden;
+  transition:
+    transform 220ms ease,
+    box-shadow 220ms ease;
+}
+
+.motion-stat::after {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  width: 42%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.72), transparent);
+  transform: translateX(-120%);
+}
+
+.motion-stat:hover {
+  box-shadow: 0 22px 70px rgba(15, 23, 42, 0.1);
+  transform: translateY(-3px);
+}
+
+.motion-stat:hover::after {
+  animation: better-life-shimmer 1.1s ease;
+}
+
+.scan-frame {
+  box-shadow: 0 30px 110px rgba(15, 23, 42, 0.08);
+}
+
+.scan-frame::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(79, 70, 229, 0.08) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(16, 185, 129, 0.07) 1px, transparent 1px);
+  background-size: 34px 34px;
+  mask-image: linear-gradient(180deg, transparent, black 18%, black 82%, transparent);
+}
+
+.scan-frame::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  height: 42%;
+  pointer-events: none;
+  background: linear-gradient(180deg, transparent, rgba(79, 70, 229, 0.12), rgba(16, 185, 129, 0.1), transparent);
+  animation: better-life-scan 3s ease-in-out infinite;
+}
+
+.draw-line {
+  stroke-dasharray: 900;
+  stroke-dashoffset: 900;
+  animation: better-life-line-draw 2.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.glass-panel {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.82), rgba(255, 255, 255, 0.58)),
+    linear-gradient(135deg, rgba(79, 70, 229, 0.08), rgba(16, 185, 129, 0.06));
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.86),
+    0 24px 90px rgba(15, 23, 42, 0.1);
+  backdrop-filter: blur(18px) saturate(1.25);
+  -webkit-backdrop-filter: blur(18px) saturate(1.25);
+}
+
+.glass-panel-strong {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(248, 250, 252, 0.7)),
+    linear-gradient(135deg, rgba(79, 70, 229, 0.1), rgba(16, 185, 129, 0.08));
+  border: 1px solid rgba(255, 255, 255, 0.86);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.92),
+    0 34px 120px rgba(15, 23, 42, 0.13);
+  backdrop-filter: blur(24px) saturate(1.35);
+  -webkit-backdrop-filter: blur(24px) saturate(1.35);
+}
+
+.fisheye-lens {
+  position: relative;
+  isolation: isolate;
+  transform-style: preserve-3d;
+}
+
+.fisheye-lens::before {
+  content: "";
+  position: absolute;
+  inset: 7%;
+  z-index: -1;
+  border-radius: inherit;
+  background:
+    radial-gradient(circle at 50% 38%, rgba(255, 255, 255, 0.78), transparent 18%),
+    radial-gradient(circle at 50% 48%, rgba(79, 70, 229, 0.18), transparent 46%),
+    radial-gradient(circle at 52% 62%, rgba(16, 185, 129, 0.14), transparent 54%);
+  filter: blur(10px);
+  opacity: 0.72;
+  transform: translateZ(-1px) scale(0.94);
+  transition:
+    opacity 260ms ease,
+    transform 260ms ease;
+}
+
+.fisheye-lens:hover::before {
+  opacity: 1;
+  transform: translateZ(-1px) scale(1.03);
+}
+
+.fisheye-card {
+  transform-origin: center;
+  transition:
+    border-color 260ms ease,
+    box-shadow 260ms ease,
+    transform 260ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.fisheye-card:hover {
+  border-color: rgba(79, 70, 229, 0.2);
+  box-shadow: 0 36px 110px rgba(15, 23, 42, 0.16);
+  transform: perspective(900px) translateY(-6px) scale(1.025);
+}
+
+.fisheye-dock {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.fisheye-dock > * {
+  transition:
+    transform 220ms cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 220ms ease,
+    box-shadow 220ms ease;
+}
+
+.fisheye-dock:hover > * {
+  opacity: 0.74;
+  transform: scale(0.96);
+}
+
+.fisheye-dock > *:hover {
+  opacity: 1;
+  transform: scale(1.14) translateY(-4px);
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.16);
+}
